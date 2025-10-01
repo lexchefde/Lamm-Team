@@ -35,9 +35,9 @@ class IngredientAdmin(admin.ModelAdmin):
     """
     Configurazione per il modello Ingredient nell'amministrazione.
     """
-    list_display = ('name', 'quantity_in_stock', 'unit', 'cost_per_unit')
+    list_display = ('name', 'barcode', 'quantity_in_stock', 'unit', 'cost_per_unit')
     list_filter = ('unit',)
-    search_fields = ('name',)
+    search_fields = ('name', 'barcode',)
 
 class RecipeIngredientInline(admin.TabularInline):
     """

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barcode Scanner</title>
+    <style>
+        #scanner-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin: auto;
+        }
+        #interactive {
+            width: 100%;
+            height: auto;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Barcode Scanner</h1>
+    <div id="scanner-container">
+        <div id="interactive" class="viewport"></div>
+    </div>
+    <div id="result">Scan a barcode to see the result here.</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            Quagga.init({
+                inputStream : {
+                    name : "Live",
+                    type : "LiveStream",
+                    target: document.querySelector('#interactive'),
+                    constraints: {
+                        width: 480,
+                        height: 320,
+                        facingMode: "environment" // or "user"
+                    },
+                },
+                decoder : {
+                    readers : ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "code_39_vin_reader", "codabar_reader", "upc_reader", "upc_e_reader", "i2of5_reader"]
+                }
+            }, function(err) {
+                if (err) {
+                    console.log(err);
+                    document.getElementById('result').textContent = 'Error initializing Quagga: ' + err;
+                    return
+                }
+                console.log("Initialization finished. Ready to start");
+                Quagga.start();
+            });
+
+            Quagga.onDetected(function(data) {
+                console.log("Barcode detected and processed : [" + data.codeResult.code + "]", data);
+                Quagga.stop();
+                fetch(`/kitchen/api/ingredient/barcode/${data.codeResult.code}/`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Ingredient not found');
+                        }
+                        return response.json();
+                    })
+                    .then(ingredient => {
+                        const resultDiv = document.getElementById('result');
+                        resultDiv.innerHTML = `
+                            <h2>Ingredient Found</h2>
+                            <p><strong>Name:</strong> ${ingredient.name}</p>
+                            <p><strong>Unit:</strong> ${ingredient.unit}</p>
+                            <p><strong>Quantity in Stock:</strong> ${ingredient.quantity_in_stock}</p>
+                            <p><strong>Cost per Unit:</strong> €${ingredient.cost_per_unit}</p>
+                        `;
+                    })
+                    .catch(error => {
+                        document.getElementById('result').textContent = error.message;
+                    })
+                    .finally(() => {
+                        // Restart scanning after a delay
+                        setTimeout(() => Quagga.start(), 2000);
+                    });
+            });
+        });
+    </script>
+</body>
+</html>

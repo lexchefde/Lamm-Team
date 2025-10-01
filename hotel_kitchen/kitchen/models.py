@@ -78,6 +78,7 @@ class Ingredient(models.Model):
         ('pz', 'Pezzi'),
     )
     name = models.CharField(max_length=100, verbose_name="Nome Ingrediente", unique=True)
+    barcode = models.CharField(max_length=100, unique=True, blank=True, null=True, verbose_name="Barcode")
     unit = models.CharField(max_length=5, choices=UNIT_CHOICES, verbose_name="Unità di Misura")
     quantity_in_stock = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Quantità in Magazzino")
     cost_per_unit = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Costo per Unità (€)")

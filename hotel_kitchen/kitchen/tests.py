@@ -108,3 +108,46 @@ class KitchenManagementTest(TestCase):
 
         # Confronto con il costo calcolato dal modello
         self.assertAlmostEqual(self.recipe.food_cost, expected_cost, places=2)
+
+
+class BarcodeAPITest(TestCase):
+    """
+    Test per l'API di recupero ingredienti tramite barcode.
+    """
+    def setUp(self):
+        """
+        Prepara i dati per i test, incluso un ingrediente con barcode.
+        """
+        self.ingredient = Ingredient.objects.create(
+            name="Latte",
+            barcode="8001234567890",
+            unit='l',
+            quantity_in_stock=Decimal('12.00'),
+            cost_per_unit=Decimal('1.10')
+        )
+
+    def test_get_ingredient_by_barcode_success(self):
+        """
+        Verifica che l'API restituisca i dati corretti per un barcode esistente.
+        """
+        response = self.client.get(f'/kitchen/api/ingredient/barcode/{self.ingredient.barcode}/')
+        self.assertEqual(response.status_code, 200)
+
+        expected_data = {
+            'id': self.ingredient.id,
+            'name': self.ingredient.name,
+            'unit': self.ingredient.get_unit_display(),
+            'quantity_in_stock': str(self.ingredient.quantity_in_stock),
+            'cost_per_unit': str(self.ingredient.cost_per_unit),
+        }
+        # Convert response content from bytes to string, then parse JSON
+        self.assertJSONEqual(response.content.decode('utf-8'), expected_data)
+
+    def test_get_ingredient_by_barcode_not_found(self):
+        """
+        Verifica che l'API restituisca un errore 404 per un barcode non esistente.
+        """
+        non_existent_barcode = "0000000000000"
+        response = self.client.get(f'/kitchen/api/ingredient/barcode/{non_existent_barcode}/')
+        self.assertEqual(response.status_code, 404)
+        self.assertJSONEqual(response.content.decode('utf-8'), {'error': 'Ingrediente non trovato'})

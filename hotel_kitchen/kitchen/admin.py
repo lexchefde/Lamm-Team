@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Profile, TemperatureRecord, CleaningRecord, Ingredient, Recipe, RecipeIngredient
+from .models import Profile, TemperatureRecord, CleaningRecord, Ingredient, Recipe, RecipeIngredient, Notification
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
@@ -62,3 +62,28 @@ class RecipeAdmin(admin.ModelAdmin):
         """
         return f"€ {obj.food_cost:.2f}"
     display_food_cost.short_description = "Food Cost"
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    """
+    Configurazione per il modello Notification nell'amministrazione.
+    """
+    list_display = ('ingredient', 'message', 'timestamp', 'is_read')
+    list_filter = ('is_read', 'timestamp')
+    search_fields = ('ingredient__name', 'message')
+    actions = ['mark_as_read', 'mark_as_unread']
+    list_editable = ('is_read',)
+
+    def mark_as_read(self, request, queryset):
+        """
+        Azione per segnare le notifiche selezionate come lette.
+        """
+        queryset.update(is_read=True)
+    mark_as_read.short_description = "Segna come lette"
+
+    def mark_as_unread(self, request, queryset):
+        """
+        Azione per segnare le notifiche selezionate come non lette.
+        """
+        queryset.update(is_read=False)
+    mark_as_unread.short_description = "Segna come non lette"

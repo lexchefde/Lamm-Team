@@ -81,6 +81,7 @@ class Ingredient(models.Model):
     unit = models.CharField(max_length=5, choices=UNIT_CHOICES, verbose_name="Unità di Misura")
     quantity_in_stock = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Quantità in Magazzino")
     cost_per_unit = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Costo per Unità (€)")
+    minimum_threshold = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Soglia Minima")
 
     def __str__(self):
         return f"{self.name} ({self.quantity_in_stock} {self.get_unit_display()})"
@@ -140,3 +141,33 @@ class RecipeIngredient(models.Model):
         verbose_name = "Ingrediente della Ricetta"
         verbose_name_plural = "Ingredienti della Ricetta"
         unique_together = ('recipe', 'ingredient')
+
+
+class Notification(models.Model):
+    """
+    Modello per le notifiche di sistema, ad esempio per scorte in esaurimento.
+    """
+    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE, verbose_name="Ingrediente")
+    message = models.TextField(verbose_name="Messaggio")
+    timestamp = models.DateTimeField(auto_now_add=True, verbose_name="Data e Ora")
+    is_read = models.BooleanField(default=False, verbose_name="Letta")
+
+    def __str__(self):
+        return f"Notifica per {self.ingredient.name}: {self.message}"
+
+    class Meta:
+        verbose_name = "Notifica"
+        verbose_name_plural = "Notifiche"
+        ordering = ['-timestamp']
+
+
+@receiver(post_save, sender=Ingredient)
+def check_ingredient_stock(sender, instance, created, **kwargs):
+    """
+    Controlla lo stock di un ingrediente e crea una notifica se scende sotto la soglia.
+    """
+    if instance.quantity_in_stock <= instance.minimum_threshold:
+        message = f"Attenzione: La scorta di {instance.name} è bassa ({instance.quantity_in_stock} {instance.get_unit_display()})."
+        # Controlla se esiste già una notifica non letta per questo ingrediente per evitare duplicati
+        if not Notification.objects.filter(ingredient=instance, is_read=False).exists():
+            Notification.objects.create(ingredient=instance, message=message)

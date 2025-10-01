@@ -1,7 +1,7 @@
 from decimal import Decimal
 from django.test import TestCase
 from django.contrib.auth.models import User
-from .models import Profile, TemperatureRecord, CleaningRecord, Ingredient, Recipe, RecipeIngredient
+from .models import Profile, TemperatureRecord, CleaningRecord, Ingredient, Recipe, RecipeIngredient, Notification
 
 class ProfileModelTest(TestCase):
     """
@@ -108,3 +108,87 @@ class KitchenManagementTest(TestCase):
 
         # Confronto con il costo calcolato dal modello
         self.assertAlmostEqual(self.recipe.food_cost, expected_cost, places=2)
+
+
+class NotificationSignalTest(TestCase):
+    """
+    Test per il segnale che genera notifiche quando le scorte sono basse.
+    """
+    def test_notification_creation_on_low_stock(self):
+        """
+        Verifica che una notifica venga creata quando la quantità di un ingrediente
+        scende al di sotto della sua soglia minima.
+        """
+        # Crea un ingrediente con una soglia minima
+        ingredient = Ingredient.objects.create(
+            name="Farina",
+            unit='kg',
+            quantity_in_stock=10,
+            cost_per_unit=1.00,
+            minimum_threshold=5  # Soglia minima di 5 kg
+        )
+
+        # La quantità iniziale è sopra la soglia, nessuna notifica dovrebbe esistere
+        self.assertEqual(Notification.objects.count(), 0)
+
+        # Aggiorna la quantità portandola sotto la soglia
+        ingredient.quantity_in_stock = 4
+        ingredient.save()
+
+        # Ora dovrebbe esistere una notifica
+        self.assertEqual(Notification.objects.count(), 1)
+        notification = Notification.objects.first()
+        self.assertEqual(notification.ingredient, ingredient)
+        self.assertIn("scorta di Farina è bassa", notification.message)
+
+    def test_no_notification_if_stock_is_sufficient(self):
+        """
+        Verifica che non venga creata alcuna notifica se la quantità
+        rimane al di sopra della soglia minima.
+        """
+        # Crea un ingrediente e aggiorna la quantità, ma sempre sopra la soglia
+        ingredient = Ingredient.objects.create(
+            name="Zucchero",
+            unit='kg',
+            quantity_in_stock=10,
+            cost_per_unit=1.20,
+            minimum_threshold=2
+        )
+        ingredient.quantity_in_stock = 8
+        ingredient.save()
+
+        # Nessuna notifica dovrebbe essere stata creata
+        self.assertEqual(Notification.objects.count(), 0)
+
+    def test_no_duplicate_notifications(self):
+        """
+        Verifica che non vengano create notifiche duplicate per lo stesso
+        ingrediente se la scorta rimane bassa.
+        """
+        # Crea un ingrediente e portalo sotto soglia
+        ingredient = Ingredient.objects.create(
+            name="Sale",
+            unit='kg',
+            quantity_in_stock=2,
+            cost_per_unit=0.50,
+            minimum_threshold=3
+        )
+
+        # La prima notifica viene creata
+        self.assertEqual(Notification.objects.count(), 1)
+
+        # Aggiorna di nuovo l'ingrediente, ma la quantità è ancora sotto soglia
+        ingredient.quantity_in_stock = 1
+        ingredient.save()
+
+        # Non dovrebbe essere stata creata una nuova notifica
+        self.assertEqual(Notification.objects.count(), 1)
+
+        # Se la notifica viene letta, una nuova può essere creata
+        notification = Notification.objects.first()
+        notification.is_read = True
+        notification.save()
+
+        ingredient.quantity_in_stock = 0.5
+        ingredient.save()
+        self.assertEqual(Notification.objects.count(), 2)

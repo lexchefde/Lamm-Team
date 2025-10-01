@@ -1,0 +1,14 @@
+{% extends "kitchen/base.html" %}
+
+{% block title %}Confirm Deletion{% endblock %}
+
+{% block content %}
+    <h2>Delete Supplier</h2>
+    <p>Are you sure you want to delete the supplier: <strong>{{ supplier.name }}</strong>?</p>
+    <form method="post">
+        {% csrf_token %}
+        <hr>
+        <button type="submit" class="btn btn-danger">Yes, delete</button>
+        <a href="{% url 'kitchen:supplier_detail' supplier.pk %}" class="btn btn-secondary">Cancel</a>
+    </form>
+{% endblock %}

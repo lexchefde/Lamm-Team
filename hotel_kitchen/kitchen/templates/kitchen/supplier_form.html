@@ -1,0 +1,14 @@
+{% extends "kitchen/base.html" %}
+
+{% block title %}{% if form.instance.pk %}Edit Supplier{% else %}Add Supplier{% endif %}{% endblock %}
+
+{% block content %}
+    <h2>{% if form.instance.pk %}Edit Supplier{% else %}Add New Supplier{% endif %}</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <hr>
+        <button type="submit" class="btn">{% if form.instance.pk %}Update{% else %}Save{% endif %}</button>
+        <a href="{% url 'kitchen:supplier_list' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "kitchen/base.html" %}
+
+{% block title %}Suppliers{% endblock %}
+
+{% block content %}
+    <h2>Suppliers</h2>
+    <a href="{% url 'kitchen:supplier_create' %}" class="btn">Add New Supplier</a>
+    <hr>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Contact Person</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for supplier in suppliers %}
+                <tr>
+                    <td><a href="{% url 'kitchen:supplier_detail' supplier.pk %}">{{ supplier.name }}</a></td>
+                    <td>{{ supplier.contact_person|default_if_none:"" }}</td>
+                    <td>{{ supplier.email|default_if_none:"" }}</td>
+                    <td>{{ supplier.phone_number|default_if_none:"" }}</td>
+                    <td>
+                        <a href="{% url 'kitchen:supplier_update' supplier.pk %}" class="btn btn-secondary">Edit</a>
+                        <a href="{% url 'kitchen:supplier_delete' supplier.pk %}" class="btn btn-danger">Delete</a>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5">No suppliers found.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "kitchen/base.html" %}
+
+{% block title %}{{ supplier.name }}{% endblock %}
+
+{% block content %}
+    <h2>{{ supplier.name }}</h2>
+    <p><strong>Contact Person:</strong> {{ supplier.contact_person|default_if_none:"N/A" }}</p>
+    <p><strong>Email:</strong> {{ supplier.email|default_if_none:"N/A" }}</p>
+    <p><strong>Phone:</strong> {{ supplier.phone_number|default_if_none:"N/A" }}</p>
+    <p><strong>Address:</strong> {{ supplier.address|default_if_none:"N/A" }}</p>
+    <p><strong>Delivery Notes:</strong> {{ supplier.delivery_notes|default_if_none:"N/A" }}</p>
+    <hr>
+    <a href="{% url 'kitchen:supplier_list' %}" class="btn btn-secondary">Back to List</a>
+    <a href="{% url 'kitchen:supplier_update' supplier.pk %}" class="btn">Edit</a>
+    <a href="{% url 'kitchen:supplier_delete' supplier.pk %}" class="btn btn-danger">Delete</a>
+{% endblock %}
